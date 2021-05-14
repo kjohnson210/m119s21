@@ -1,0 +1,79 @@
+---
+title: "Using Fitted Models to Calculate Probability (Example Project Task 4)"
+author: "Math 119 Class"
+date: "2/4/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+We are interested in the variation in the measured brightness of light bulbs. We have the brightness of 202 light bulbs measured at 2104 hours after each light bulbs was turned on. Note that 2104 hours is approximately 88 days, or 3 months.The brightness of each light bulbs is measured in lumens and recorded as a percent of the original brightness of the bulb, $\left(\frac{\text{current brightness in lumens}}{\text{original brightness in lumens when the bulb was first turned on}} \right) (100)$.
+A histogram showing the distribution of these measurements included below.
+```{r}
+library(data4led)
+dist <- led_time(2100)
+
+dist$percent_intensity <- dist$percent_intensity*100
+
+hist(dist$percent_intensity,probability = TRUE,main="Light Bulbs, 2104 hours",xlab='Intensity (as a percent)')
+```
+
+We have fit three general models to this data. These models are a Uniform distribution, $f_0(L; a=99.5,b=103.5) = \frac{1}{4}$ with $-\infty < 99.5 < L < 103.5 < \infty$, a Normal distribution, $f_1(L; h=101.5,a=0.4) = \frac{1}{\sqrt{2\pi (0.4)}}e^{-\frac{(x-101.5)^2}{2(0.4)}}$ with $-\infty < L < \infty$, and a Gamma distribution,
+$f_2(L; h=98.4,a=25.8,b=8) = \frac{8^{25.8}}{\Gamma(25.8)}(L-98.4)^{25.8-1}e^{-8(L-98.4)}$ with $L \geq 98.4$. We will use these fitted models to determine the probability that a light bulb will have an intensity between 100.2533% and 102.6927% of its initial intensity after 2104 hours of use.
+
+```{r}
+f0 <- function(L,a=99.5,b=103.5){
+# Make sure a < L < b when using this function. Also make sure a < b.
+rep(1/(b-a),length(L))
+}
+
+f1 <- function(L,h=101.5,a=0.4){
+# This function can be evaluated at any value of L. Make sure h > 0 and a > 0.
+1/sqrt(2*pi*a)*exp(-(L-h)^2/(2*a))
+}
+
+f2 <- function(L,h=98.4,a=25.8,b=8){
+# Make sure L is greater than or equal to h when using this function. Also make sure a > 0 and b > 0.
+b^a/gamma(a)*(L-h)^(a-1)*exp(-b*(L-h))
+}
+```
+
+We begin by using the each of the fitted models to simulate 5000 measurement from that model. The histograms of each of these simulated data sets are shown below. We set the random seed to 0204 so that the results shown below can be reproduced exactly.
+```{r}
+set.seed(0204)
+data0 <- runif(5000,99.5,103.5)
+data1 <- rnorm(5000,101.5,sqrt(0.4))
+data2 <- rgamma(5000,25.8,8)+98.4
+
+par(mfrow=c(1,3))
+hist(data0,probability = TRUE,main='Fitted Uniform, f0',xlab='Intensity (as a percent)')
+hist(data1,probability = TRUE,main='Fitted Normal, f1',xlab='Intensity (as a percent)')
+hist(data2,probability = TRUE,main='Fitted Gamma, f2',xlab='Intensity (as a percent)')
+```
+
+We now calculate the probability a light bulb will have an intensity between 100.2533% and 102.6927% using the simulated data from each of these fitted models. We count the number of observations that are between 100.2533% and 102.6927%. We find there are 3055 of the light bulbs simulated using $f_0$ are between 100.2533% and 102.6927%. We see there are 4704 of the light bulbs simulated using $f_1$ are between 100.2533% and 102.6927%. And we observe there are 4681 of the light bulbs simulated using $f_2$ are between 100.2533% and 102.6927%. 
+```{r}
+N0 <- length(which(data0>100.2533 & data0<102.6927))
+N0
+
+N1 <- length(which(data1>100.2533 & data1<102.6927))
+N1
+
+N2 <- length(which(data2>100.2533 & data2<102.6927))
+N2
+```
+
+Dividing each of these values by 5000, the total number of light bulbs in each simulated data set, we estimate the probability that a light bulb will have an intensity between 100.2533% and 102.6927%. The fitted model $f_0$ gives a probability of 0.611, or approximately 61.1% of the light bulbs will have intensity between 100.2533% and 102.6927%. The fitted model $f_1$ gives a probability of 0.9408, or approximately 94.1% of the light bulbs will have intensity between 100.2533% and 102.6927%. The fitted model $f_2$ gives a probability of 0.9362, or approximately 93.6% of the light bulbs will have intensity between 100.2533% and 102.6927%.
+```{r}
+N0/length(data0)
+N1/length(data1)
+N2/length(data2)
+```
+
+This random experiment, simulating data and calculating data can be repeated and similar results will be observed. We notice that the results from the three fitted models are different and that the probability obtain by using the fitted model $f_0$ appears very different from the other two models. We are using these fitted models to answer a question and we see the answer to our question, what is the probability a light bulb will have between 100.2533% and 102.6927% after 2104 hours, is different depending on which fitted model we use to find the answer. This highlights the importance of selecting a model to use. A model is a powerful tool and models can help use extract information from data and answer more questions than we can with the data alone. That being said, when we use a model we are making an assumption and it is important to remember this when fitting and using models to obtain information from data. This is why we often use more than one model to gather information from the data or spend significant time developing, refining, and validating the models we use in each situation.
+
+All of the fitted models contain information from the data. This is what it means to fit a model to data. However, the fitted Uniform distribution, $f_0$, says that all measurement from 99.5% to 103.5% are equally likely which is not what we would expect from this kind of measurement data nor is it the pattern we see in the 202 light bulbs. For these reasons we do not believe this would be a useful model in this situation. The fitted Normal distribution, $f_1$, and fitted Gamma distribution, $f_2$, appear to provide reasonable descriptions of what is happening with the light bulbs after 2104 hours. In future analysis we would continue to work with $f_1$ and $f_2$ but no longer use $f_0$.
